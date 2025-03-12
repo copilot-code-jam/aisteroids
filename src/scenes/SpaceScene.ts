@@ -17,6 +17,7 @@ export class SpaceScene extends Scene {
   private velocity: { x: number; y: number } = { x: 0, y: 0 };
   private enemies!: Phaser.Physics.Arcade.Group;
   private enemySpeed: number = 0;
+  private isGameOver: boolean = false;
 
   constructor() {
     super({ key: "SpaceScene" });
@@ -57,20 +58,17 @@ export class SpaceScene extends Scene {
 
     // Spawn asteroids at random intervals
     this.time.addEvent({
-      delay: 1000, // 1 second
+      delay: 2000, // 2 seconds
       callback: this.spawnAsteroid,
       callbackScope: this,
-      loop: true,
+      loop: true
     });
 
     // Add collision between astronaut and asteroids
-    this.physics.add.collider(
-      this.astronaut,
-      this.asteroids,
-      this.handleCollision,
-      undefined,
-      this
-    );
+    this.physics.add.collider(this.astronaut, this.asteroids, this.handleCollision, undefined, this);
+
+    // Add collision between asteroids
+    this.physics.add.collider(this.asteroids, this.asteroids);
 
     // Create game over overlay and text but make them invisible initially
     this.gameOverOverlay = this.add.graphics();
@@ -79,50 +77,50 @@ export class SpaceScene extends Scene {
     this.gameOverOverlay.setVisible(false);
 
     this.gameOverText = this.add.text(
-      this.scale.width / 2,
-      this.scale.height / 2 - 100,
-      "Game Over",
-      {
-        fontSize: "64px",
-        color: "#ff0000",
-      }
+        this.scale.width / 2,
+        this.scale.height / 2 - 100,
+        "Game Over",
+        {
+          fontSize: "64px",
+          color: "#ff0000",
+        }
     );
     this.gameOverText.setOrigin(0.5);
     this.gameOverText.setVisible(false);
 
     this.finalScoreText = this.add.text(
-      this.scale.width / 2,
-      this.scale.height / 2,
-      "",
-      {
-        fontSize: "32px",
-        color: "#ffffff",
-      }
+        this.scale.width / 2,
+        this.scale.height / 2,
+        "",
+        {
+          fontSize: "32px",
+          color: "#ffffff",
+        }
     );
     this.finalScoreText.setOrigin(0.5);
     this.finalScoreText.setVisible(false);
 
     this.highScoreText = this.add.text(
-      this.scale.width / 2,
-      this.scale.height / 2 + 50,
-      "",
-      {
-        fontSize: "32px",
-        color: "#ffffff",
-      }
+        this.scale.width / 2,
+        this.scale.height / 2 + 50,
+        "",
+        {
+          fontSize: "32px",
+          color: "#ffffff",
+        }
     );
     this.highScoreText.setOrigin(0.5);
     this.highScoreText.setVisible(false);
 
     this.restartButton = this.add.text(
-      this.scale.width / 2,
-      this.scale.height / 2 + 100,
-      "Restart",
-      {
-        fontSize: "32px",
-        color: "#ffffff",
-        backgroundColor: "#000000",
-      }
+        this.scale.width / 2,
+        this.scale.height / 2 + 100,
+        "Restart",
+        {
+          fontSize: "32px",
+          color: "#ffffff",
+          backgroundColor: "#000000",
+        }
     );
     this.restartButton.setOrigin(0.5);
     this.restartButton.setInteractive();
@@ -143,11 +141,11 @@ export class SpaceScene extends Scene {
 
     // Add collision between astronaut and enemies
     this.physics.add.collider(
-      this.astronaut,
-      this.enemies,
-      this.handleCollision,
-      undefined,
-      this
+        this.astronaut,
+        this.enemies,
+        this.handleCollision,
+        undefined,
+        this
     );
 
     // Spawn the first enemy after 20 seconds
@@ -167,6 +165,10 @@ export class SpaceScene extends Scene {
   }
 
   update() {
+    if (this.isGameOver) {
+      return;
+    }
+
     // Reset velocity
     this.astronaut.setVelocity(0);
 
@@ -202,43 +204,38 @@ export class SpaceScene extends Scene {
   }
 
   private spawnAsteroid() {
+    if (this.isGameOver) {
+      return; // Do not spawn asteroids if the game is over
+    }
     const positions = [
       { x: Phaser.Math.Between(0, this.scale.width), y: 0 }, // Top
       { x: Phaser.Math.Between(0, this.scale.width), y: this.scale.height }, // Bottom
       { x: 0, y: Phaser.Math.Between(0, this.scale.height) }, // Left
-      { x: this.scale.width, y: Phaser.Math.Between(0, this.scale.height) }, // Right
+      { x: this.scale.width, y: Phaser.Math.Between(0, this.scale.height) } // Right
     ];
     const position = Phaser.Math.RND.pick(positions);
-    const key = Phaser.Math.RND.pick(["big-meteor", "small-meteor"]);
+    const key = Phaser.Math.RND.pick(['big-meteor', 'small-meteor']);
     const asteroid = this.asteroids.create(position.x, position.y, key);
-
     if (asteroid) {
       asteroid.setActive(true);
       asteroid.setVisible(true);
-      asteroid.setScale(0.5); // Set the scale to half size
-
-      // Calculate velocity towards the center of the screen
-      const centerX = this.scale.width / 2;
-      const centerY = this.scale.height / 2;
-      const angle = Phaser.Math.Angle.Between(
-        position.x,
-        position.y,
-        centerX,
-        centerY
-      );
+      asteroid.setScale(0.5);
+      asteroid.body.collideWorldBounds = false; // Disable world bounds collision
+      // Calculate velocity to move out of the screen
+      const angle = Phaser.Math.Angle.Between(position.x, position.y, this.scale.width / 2, this.scale.height / 2);
       const speed = Phaser.Math.Between(100, 200);
       this.physics.velocityFromRotation(angle, speed, asteroid.body.velocity);
     }
-
     // Increase the number of asteroids based on the score, up to a maximum of 8
-    if (
-      this.asteroids.getLength() < Math.min(Math.floor(this.score / 10) + 1, 8)
-    ) {
+    if (this.asteroids.getLength() < Math.min(Math.floor(this.score / 10) + 1, 8)) {
       this.spawnAsteroid();
     }
   }
 
   private spawnEnemy() {
+    if (this.isGameOver) {
+      return; // Do not spawn enemies if the game is over
+    }
     // Spawn the enemy at a random position
     const positions = [
       { x: Phaser.Math.Between(0, this.scale.width), y: 0 }, // Top
@@ -259,14 +256,15 @@ export class SpaceScene extends Scene {
   }
 
   private handleCollision(
-    astronaut: Phaser.Physics.Arcade.Sprite,
-    object: Phaser.Physics.Arcade.Sprite
+      astronaut: Phaser.Physics.Arcade.Sprite,
+      object: Phaser.Physics.Arcade.Sprite
   ) {
     // Handle collision between astronaut and asteroid or enemy
     object.setActive(false);
     object.setVisible(false);
 
     // Show game over overlay and text
+    this.isGameOver = true;
     this.gameOverOverlay.setVisible(true);
     this.gameOverText.setVisible(true);
     this.finalScoreText.setText("Final Score: " + this.score);
