@@ -15,6 +15,7 @@ export class SpaceScene extends Scene {
     private highScore: number = 0;
     private startTime!: number;
     private velocity: { x: number, y: number } = { x: 0, y: 0 };
+    private gameOver: boolean = false; // Add gameOver flag
 
     constructor() {
         super({ key: 'SpaceScene' });
@@ -31,7 +32,7 @@ export class SpaceScene extends Scene {
     }
 
     create() {
-        // Create the background image and stretch it to cover the entire screen
+        // Initialize game objects
         this.background = this.add.image(0, 0, 'space-bg');
         this.background.setOrigin(0, 0);
         this.background.displayWidth = this.scale.width;
@@ -110,7 +111,10 @@ export class SpaceScene extends Scene {
     }
 
     update() {
-        // Reset velocity
+        if (this.gameOver) {
+            return; // Do not update if the game is over
+        }
+
         this.astronaut.setVelocity(0);
 
         // Move the astronaut based on arrow keys with progressive control
@@ -138,6 +142,10 @@ export class SpaceScene extends Scene {
     }
 
     private spawnAsteroid() {
+        if (this.gameOver) {
+            return; // Do not spawn asteroids if the game is over
+        }
+
         const positions = [
             { x: Phaser.Math.Between(0, this.scale.width), y: 0 }, // Top
             { x: Phaser.Math.Between(0, this.scale.width), y: this.scale.height }, // Bottom
@@ -151,7 +159,7 @@ export class SpaceScene extends Scene {
         if (asteroid) {
             asteroid.setActive(true);
             asteroid.setVisible(true);
-            asteroid.setScale(0.5); // Set the scale to half size
+            asteroid.setScale(0.5);
 
             // Calculate velocity towards the center of the screen
             const centerX = this.scale.width / 2;
@@ -168,7 +176,8 @@ export class SpaceScene extends Scene {
     }
 
     private handleCollision(astronaut: Phaser.Physics.Arcade.Sprite, asteroid: Phaser.Physics.Arcade.Sprite) {
-        // Handle collision between astronaut and asteroid
+        this.gameOver = true; // Set gameOver flag to true
+
         asteroid.setActive(false);
         asteroid.setVisible(false);
 
