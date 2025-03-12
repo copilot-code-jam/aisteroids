@@ -79,14 +79,16 @@ export class SpaceScene extends Scene {
     this.gameOverText = this.add.text(
         this.scale.width / 2,
         this.scale.height / 2 - 100,
-        "Game Over",
+        "GAME OVER",
         {
           fontSize: "64px",
           color: "#ff0000",
+          fontStyle: "bold",
         }
     );
     this.gameOverText.setOrigin(0.5);
     this.gameOverText.setVisible(false);
+    this.gameOverText.setDepth(1);
 
     this.finalScoreText = this.add.text(
         this.scale.width / 2,
@@ -95,10 +97,12 @@ export class SpaceScene extends Scene {
         {
           fontSize: "32px",
           color: "#ffffff",
+          fontStyle: "bold",
         }
     );
     this.finalScoreText.setOrigin(0.5);
     this.finalScoreText.setVisible(false);
+    this.finalScoreText.setDepth(1);
 
     this.highScoreText = this.add.text(
         this.scale.width / 2,
@@ -107,25 +111,29 @@ export class SpaceScene extends Scene {
         {
           fontSize: "32px",
           color: "#ffffff",
+          fontStyle: "bold",
         }
     );
     this.highScoreText.setOrigin(0.5);
     this.highScoreText.setVisible(false);
+    this.highScoreText.setDepth(1);
 
     this.restartButton = this.add.text(
         this.scale.width / 2,
         this.scale.height / 2 + 100,
-        "Restart",
+        "RESTART",
         {
           fontSize: "32px",
           color: "#ffffff",
           backgroundColor: "#000000",
+          fontStyle: "bold",
         }
     );
     this.restartButton.setOrigin(0.5);
     this.restartButton.setInteractive();
-    this.restartButton.on("pointerdown", () => this.scene.restart());
+    this.restartButton.on("pointerdown", () => this.restartGame());
     this.restartButton.setVisible(false);
+    this.restartButton.setDepth(1);
 
     // Create score text
     this.scoreText = this.add.text(10, 10, "Score: 0", {
@@ -267,13 +275,13 @@ export class SpaceScene extends Scene {
     this.isGameOver = true;
     this.gameOverOverlay.setVisible(true);
     this.gameOverText.setVisible(true);
-    this.finalScoreText.setText("Final Score: " + this.score);
+    this.finalScoreText.setText("FINAL SCORE: " + this.score);
     this.finalScoreText.setVisible(true);
 
     if (this.score > this.highScore) {
       this.highScore = this.score;
     }
-    this.highScoreText.setText("High Score: " + this.highScore);
+    this.highScoreText.setText("HIGH SCORE: " + this.highScore);
     this.highScoreText.setVisible(true);
 
     this.restartButton.setVisible(true);
@@ -281,5 +289,23 @@ export class SpaceScene extends Scene {
     // Stop the game
     this.physics.pause();
     this.astronaut.setTint(0xff0000);
+  }
+
+  private restartGame() {
+    this.isGameOver = false;
+    this.score = 0;
+    this.velocity = { x: 0, y: 0 };
+    this.startTime = this.time.now;
+
+    this.gameOverOverlay.setVisible(false);
+    this.gameOverText.setVisible(false);
+    this.finalScoreText.setVisible(false);
+    this.highScoreText.setVisible(false);
+    this.restartButton.setVisible(false);
+
+    this.astronaut.clearTint();
+    this.physics.resume();
+
+    this.scene.restart();
   }
 }
