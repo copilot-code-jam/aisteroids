@@ -8,6 +8,12 @@ export class SpaceScene extends Scene {
     private gameOverText!: Phaser.GameObjects.Text;
     private gameOverOverlay!: Phaser.GameObjects.Graphics;
     private restartButton!: Phaser.GameObjects.Text;
+    private scoreText!: Phaser.GameObjects.Text;
+    private finalScoreText!: Phaser.GameObjects.Text;
+    private highScoreText!: Phaser.GameObjects.Text;
+    private score: number = 0;
+    private highScore: number = 0;
+    private startTime!: number;
     private velocity: { x: number, y: number } = { x: 0, y: 0 };
 
     constructor() {
@@ -40,9 +46,10 @@ export class SpaceScene extends Scene {
         this.cursors = this.input.keyboard.createCursorKeys();
 
         // Create a group for the asteroids
-        this.asteroids = this.physics.add.group({
-            maxSize: 10
-        });
+        this.asteroids = this.physics.add.group();
+
+        // Spawn the initial asteroid
+        this.spawnAsteroid();
 
         // Spawn asteroids at random intervals
         this.time.addEvent({
@@ -61,14 +68,28 @@ export class SpaceScene extends Scene {
         this.gameOverOverlay.fillRect(0, 0, this.scale.width, this.scale.height);
         this.gameOverOverlay.setVisible(false);
 
-        this.gameOverText = this.add.text(this.scale.width / 2, this.scale.height / 2 - 50, 'Game Over', {
+        this.gameOverText = this.add.text(this.scale.width / 2, this.scale.height / 2 - 100, 'Game Over', {
             fontSize: '64px',
             color: '#ff0000'
         });
         this.gameOverText.setOrigin(0.5);
         this.gameOverText.setVisible(false);
 
-        this.restartButton = this.add.text(this.scale.width / 2, this.scale.height / 2 + 50, 'Restart', {
+        this.finalScoreText = this.add.text(this.scale.width / 2, this.scale.height / 2, '', {
+            fontSize: '32px',
+            color: '#ffffff'
+        });
+        this.finalScoreText.setOrigin(0.5);
+        this.finalScoreText.setVisible(false);
+
+        this.highScoreText = this.add.text(this.scale.width / 2, this.scale.height / 2 + 50, '', {
+            fontSize: '32px',
+            color: '#ffffff'
+        });
+        this.highScoreText.setOrigin(0.5);
+        this.highScoreText.setVisible(false);
+
+        this.restartButton = this.add.text(this.scale.width / 2, this.scale.height / 2 + 100, 'Restart', {
             fontSize: '32px',
             color: '#ffffff',
             backgroundColor: '#000000'
@@ -77,6 +98,15 @@ export class SpaceScene extends Scene {
         this.restartButton.setInteractive();
         this.restartButton.on('pointerdown', () => this.scene.restart());
         this.restartButton.setVisible(false);
+
+        // Create score text
+        this.scoreText = this.add.text(10, 10, 'Score: 0', {
+            fontSize: '32px',
+            color: '#ffffff'
+        });
+
+        // Initialize start time
+        this.startTime = this.time.now;
     }
 
     update() {
@@ -101,6 +131,10 @@ export class SpaceScene extends Scene {
         }
 
         this.astronaut.setVelocity(this.velocity.x, this.velocity.y);
+
+        // Update score based on survival time
+        this.score = Math.floor((this.time.now - this.startTime) / 1000);
+        this.scoreText.setText('Score: ' + this.score);
     }
 
     private spawnAsteroid() {
@@ -126,6 +160,11 @@ export class SpaceScene extends Scene {
             const speed = Phaser.Math.Between(100, 200);
             this.physics.velocityFromRotation(angle, speed, asteroid.body.velocity);
         }
+
+        // Increase the number of asteroids based on the score, up to a maximum of 8
+        if (this.asteroids.getLength() < Math.min(Math.floor(this.score / 10) + 1, 8)) {
+            this.spawnAsteroid();
+        }
     }
 
     private handleCollision(astronaut: Phaser.Physics.Arcade.Sprite, asteroid: Phaser.Physics.Arcade.Sprite) {
@@ -136,6 +175,15 @@ export class SpaceScene extends Scene {
         // Show game over overlay and text
         this.gameOverOverlay.setVisible(true);
         this.gameOverText.setVisible(true);
+        this.finalScoreText.setText('Final Score: ' + this.score);
+        this.finalScoreText.setVisible(true);
+
+        if (this.score > this.highScore) {
+            this.highScore = this.score;
+        }
+        this.highScoreText.setText('High Score: ' + this.highScore);
+        this.highScoreText.setVisible(true);
+
         this.restartButton.setVisible(true);
 
         // Stop the game
